@@ -1,1 +1,0 @@
-const hoursTrackerDB = require("../db");
