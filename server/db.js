@@ -11,13 +11,11 @@ mongoose
 
 const hours = new mongoose.Schema({
   date: {
-    type: String,
+    type: Date,
     required: true,
   },
-  hoursWorked: {
-    type: Number,
-    required: true,
-  },
+  activeHrs: { type: Number, required: true },
+  passiveHrs: { type: Number, required: true },
 });
 
 const hoursTrackerDB = mongoose.model("hoursTrackerDB", hours);

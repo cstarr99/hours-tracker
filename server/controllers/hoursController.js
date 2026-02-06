@@ -24,7 +24,8 @@ exports.createHourLog = async (req, res) => {
   try {
     const newHourLog = await hoursTrackerDB.create({
       date: req.body.date,
-      hoursWorked: req.body.hoursWorked,
+      activeHrs: req.body.activeHrs,
+      passiveHrs: req.body.passiveHrs,
     });
     res.status(201).json({
       status: "success",
