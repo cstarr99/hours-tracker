@@ -1,38 +1,159 @@
-.App {
+/* ---------- General ---------- */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #59adde;
+  margin: 0;
+  padding: 20px;
+  color: #333;
+}
+
+h1 {
   text-align: center;
+  margin-bottom: 20px;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+h2,
+h3 {
+  margin-top: 20px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* ---------- Toggle Buttons ---------- */
+.toggle-buttons {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.toggle-buttons button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #ddd;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 5px;
+  transition: 0.2s;
+}
+
+.toggle-buttons button.active,
+.toggle-buttons button:hover {
+  background-color: #007bff;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+/* ---------- Weekly / Monthly Totals ---------- */
+.weekly-totals,
+.monthly-totals,
+.yearly-total {
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* ---------- Week / Month Controls ---------- */
+.week-controls,
+.month-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.week-controls button,
+.month-controls button {
+  padding: 5px 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.week-controls button:hover,
+.month-controls button:hover {
+  background-color: #0056b3;
+}
+
+/* ---------- Days List ---------- */
+.week-days,
+.month-days {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.week-days li,
+.month-days li {
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.week-days li.today,
+.month-days li.today {
+  border: 2px solid #007bff;
+}
+
+/* ---------- Inputs ---------- */
+.week-days input,
+.month-days input {
+  width: 100%;
+  padding: 5px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+/* ---------- Yearly Table ---------- */
+.yearly-summary table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.yearly-summary th,
+.yearly-summary td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.yearly-summary th {
+  background-color: #007bff;
+  color: white;
+}
+
+/* ---------- Misc ---------- */
+p {
+  margin: 5px 0;
+}
+
+ul li {
+  display: flex;
+  flex-direction: column;
+}
+.day-input {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.day-input label {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.day-input input {
+  width: 100%;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
