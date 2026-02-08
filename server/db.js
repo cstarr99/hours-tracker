@@ -11,7 +11,7 @@ mongoose
 
 const hours = new mongoose.Schema({
   date: {
-    type: Date,
+    type: String,
     required: true,
   },
   activeHrs: { type: Number, required: true },

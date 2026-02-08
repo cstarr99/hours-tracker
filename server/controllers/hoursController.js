@@ -23,7 +23,7 @@ exports.getAllHours = async (req, res) => {
 exports.createHourLog = async (req, res) => {
   try {
     const newHourLog = await hoursTrackerDB.create({
-      date: req.body.date,
+      date: req.body.date.slice(0, 10),
       activeHrs: req.body.activeHrs,
       passiveHrs: req.body.passiveHrs,
     });
@@ -62,11 +62,11 @@ exports.updateHourLog = async (req, res) => {
   try {
     const updatedHourLog = await hoursTrackerDB.findByIdAndUpdate(
       req.params.id,
-      req.body,
       {
-        new: true,
-        runValidators: true,
-      }
+        ...req.body,
+        date: req.body.date?.slice(0, 10), // optional, keep as YYYY-MM-DD
+      },
+      { new: true, runValidators: true }
     );
     res.status(201).json({
       status: "success",

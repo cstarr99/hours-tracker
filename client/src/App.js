@@ -4,43 +4,51 @@ import "./App.css";
 
 const API_URL = "http://localhost:5000/api/hours";
 
-// DATE HELPERS
-const dateKey = (date) => date.toISOString().split("T")[0];
+// ---------- DATE HELPERS ----------
+// Format Date object as YYYY-MM-DD string
+const formatDate = (date) => {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+// Start of week (Monday)
 const startOfWeek = (date) => {
   const d = new Date(date);
-  const day = d.getUTCDay();
-  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-  d.setUTCDate(diff);
-  d.setUTCHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
   return d;
 };
+
 const addDays = (date, days) => {
   const d = new Date(date);
-  d.setUTCDate(d.getUTCDate() + days);
+  d.setDate(d.getDate() + days);
   return d;
 };
-const startOfMonth = (date) =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
-const addMonths = (date, months) =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
-const daysInMonth = (date) =>
-  new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)
-  ).getUTCDate();
 
-// APP
+const startOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
+const addMonths = (date, months) =>
+  new Date(date.getFullYear(), date.getMonth() + months, 1);
+const daysInMonth = (date) =>
+  new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
 function App() {
   const [view, setView] = useState("week");
+
+  // Store hours from backend, key = YYYY-MM-DD
   const [hours, setHours] = useState({});
 
-  // FETCH DATA
+  // Fetch hours from backend
   useEffect(() => {
     axios
       .get(API_URL)
       .then((res) => {
         const map = {};
         res.data.data.allHours.forEach((log) => {
-          const key = log.date.split("T")[0];
+          const key = log.date.slice(0, 10); // treat as string YYYY-MM-DD
           map[key] = {
             id: log._id,
             activeHrs: log.activeHrs,
@@ -52,105 +60,113 @@ function App() {
       .catch((err) => console.error(err));
   }, []);
 
-  //WEEKLY STATE
+  // ---------- Weekly ----------
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()));
   const weekDays = [...Array(7)].map((_, i) => addDays(weekStart, i));
 
-  // MONTHLY STATE
+  // ---------- Monthly ----------
   const [monthStart, setMonthStart] = useState(startOfMonth(new Date()));
   const monthDays = [...Array(daysInMonth(monthStart))].map(
-    (_, i) =>
-      new Date(
-        Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), i + 1)
-      )
+    (_, i) => new Date(monthStart.getFullYear(), monthStart.getMonth(), i + 1)
   );
 
-  // HANDLE INPUT
+  // ---------- Input handler ----------
   const handleInput = async (day, field, value) => {
-    const key = dateKey(day);
+    const key = formatDate(day);
     const num = Number(value);
     const existing = hours[key];
 
     if (!existing) {
-      const res = await axios.post(API_URL, {
-        date: key,
-        activeHrs: field === "activeHrs" ? num : 0,
-        passiveHrs: field === "passiveHrs" ? num : 0,
-      });
-      setHours((prev) => ({
-        ...prev,
-        [key]: {
-          id: res.data.data.hourLog._id,
-          activeHrs: res.data.data.hourLog.activeHrs,
-          passiveHrs: res.data.data.hourLog.passiveHrs,
-        },
-      }));
+      // create new
+      try {
+        const res = await axios.post(API_URL, {
+          date: key,
+          activeHrs: field === "activeHrs" ? num : 0,
+          passiveHrs: field === "passiveHrs" ? num : 0,
+        });
+        setHours((prev) => ({
+          ...prev,
+          [key]: {
+            id: res.data.data.hourLog._id,
+            activeHrs: res.data.data.hourLog.activeHrs,
+            passiveHrs: res.data.data.hourLog.passiveHrs,
+          },
+        }));
+      } catch (err) {
+        console.error(err);
+      }
     } else {
-      const updated = { ...existing, [field]: num };
-      await axios.patch(`${API_URL}/${existing.id}`, updated);
-      setHours((prev) => ({ ...prev, [key]: updated }));
+      // update existing
+      try {
+        const updated = { ...existing, [field]: num };
+        await axios.patch(`${API_URL}/${existing.id}`, updated);
+        setHours((prev) => ({ ...prev, [key]: updated }));
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
-  //TOTAL CALCULATIONS
+  // ---------- Totals ----------
   const sum = (days, field) =>
-    days.reduce((acc, d) => acc + (hours[dateKey(d)]?.[field] || 0), 0);
+    days.reduce((acc, day) => acc + (hours[formatDate(day)]?.[field] || 0), 0);
 
+  // Weekly totals
   const weeklyActive = sum(weekDays, "activeHrs");
   const weeklyPassive = sum(weekDays, "passiveHrs");
   const weeklyTotal = weeklyActive + weeklyPassive;
 
+  // Monthly totals
   const monthlyActive = sum(monthDays, "activeHrs");
   const monthlyPassive = sum(monthDays, "passiveHrs");
   const monthlyTotal = monthlyActive + monthlyPassive;
 
-  const year = monthStart.getUTCFullYear();
-  const yearlyTotals = [...Array(12)].map((_, m) => {
-    const start = new Date(Date.UTC(year, m, 1));
-    const days = [...Array(daysInMonth(start))].map(
-      (_, i) => new Date(Date.UTC(year, m, i + 1))
+  // Yearly totals
+  const year = monthStart.getFullYear();
+  const yearlyTotals = Array.from({ length: 12 }, (_, m) => {
+    const firstDay = new Date(year, m, 1);
+    const days = [...Array(daysInMonth(firstDay))].map(
+      (_, i) => new Date(year, m, i + 1)
     );
     const active = sum(days, "activeHrs");
     const passive = sum(days, "passiveHrs");
     return {
-      month: start.toLocaleString("default", { month: "short" }),
+      month: firstDay.toLocaleString("default", { month: "short" }),
       active,
       passive,
       total: active + passive,
     };
   });
-
-  const yearlyActive = yearlyTotals.reduce((a, m) => a + m.active, 0);
-  const yearlyPassive = yearlyTotals.reduce((a, m) => a + m.passive, 0);
+  const yearlyActive = yearlyTotals.reduce((acc, m) => acc + m.active, 0);
+  const yearlyPassive = yearlyTotals.reduce((acc, m) => acc + m.passive, 0);
   const yearlyTotal = yearlyActive + yearlyPassive;
 
-  // UI
+  // ---------- UI ----------
   return (
     <div className="App">
       <h1>Hours Tracker</h1>
 
-      {/* Toggle view */}
       <div className="toggle-buttons">
         <button
           className={view === "week" ? "active" : ""}
           onClick={() => setView("week")}
         >
-          Weekly View
+          Weekly
         </button>
         <button
           className={view === "month" ? "active" : ""}
           onClick={() => setView("month")}
         >
-          Monthly View
+          Monthly
         </button>
       </div>
 
-      {/* ---------- WEEKLY ---------- */}
+      {/* Weekly */}
       {view === "week" && (
         <div className="weekly-view">
           <h2>Weekly Calendar</h2>
           <div className="weekly-totals">
-            <p>Total Hours: {weeklyTotal}</p>
+            <p>Total: {weeklyTotal}</p>
             <p>Active: {weeklyActive}</p>
             <p>Passive: {weeklyPassive}</p>
           </div>
@@ -159,21 +175,20 @@ function App() {
               Previous Week
             </button>
             <span>
-              {weekStart.toDateString()} –{" "}
-              {addDays(weekStart, 6).toDateString()}
+              {formatDate(weekStart)} - {formatDate(addDays(weekStart, 6))}
             </span>
             <button onClick={() => setWeekStart(addDays(weekStart, 7))}>
               Next Week
             </button>
           </div>
           <ul className="week-days">
-            {weekDays.map((d) => {
-              const key = dateKey(d);
+            {weekDays.map((day) => {
+              const key = formatDate(day);
               const h = hours[key] || {};
               return (
                 <li
                   key={key}
-                  className={key === dateKey(new Date()) ? "today" : ""}
+                  className={key === formatDate(new Date()) ? "today" : ""}
                 >
                   {key}
                   <div className="day-input">
@@ -184,7 +199,7 @@ function App() {
                         min="0"
                         value={h.activeHrs || ""}
                         onChange={(e) =>
-                          handleInput(d, "activeHrs", e.target.value)
+                          handleInput(day, "activeHrs", e.target.value)
                         }
                       />
                     </label>
@@ -195,7 +210,7 @@ function App() {
                         min="0"
                         value={h.passiveHrs || ""}
                         onChange={(e) =>
-                          handleInput(d, "passiveHrs", e.target.value)
+                          handleInput(day, "passiveHrs", e.target.value)
                         }
                       />
                     </label>
@@ -207,16 +222,15 @@ function App() {
         </div>
       )}
 
-      {/* ---------- MONTHLY ---------- */}
+      {/* Monthly */}
       {view === "month" && (
         <div className="monthly-view">
           <h2>Monthly Calendar</h2>
           <div className="monthly-totals">
-            <p>Total Hours: {monthlyTotal}</p>
+            <p>Total: {monthlyTotal}</p>
             <p>Active: {monthlyActive}</p>
             <p>Passive: {monthlyPassive}</p>
           </div>
-
           <div className="month-controls">
             <button onClick={() => setMonthStart(addMonths(monthStart, -1))}>
               Previous Month
@@ -234,7 +248,7 @@ function App() {
 
           <div className="yearly-total">
             <h3>Year {year} Totals</h3>
-            <p>Total Hours: {yearlyTotal}</p>
+            <p>Total: {yearlyTotal}</p>
             <p>Active: {yearlyActive}</p>
             <p>Passive: {yearlyPassive}</p>
           </div>
@@ -264,13 +278,13 @@ function App() {
           </div>
 
           <ul className="month-days">
-            {monthDays.map((d) => {
-              const key = dateKey(d);
+            {monthDays.map((day) => {
+              const key = formatDate(day);
               const h = hours[key] || {};
               return (
                 <li
                   key={key}
-                  className={key === dateKey(new Date()) ? "today" : ""}
+                  className={key === formatDate(new Date()) ? "today" : ""}
                 >
                   {key}
                   <div className="day-input">
@@ -281,7 +295,7 @@ function App() {
                         min="0"
                         value={h.activeHrs || ""}
                         onChange={(e) =>
-                          handleInput(d, "activeHrs", e.target.value)
+                          handleInput(day, "activeHrs", e.target.value)
                         }
                       />
                     </label>
@@ -292,7 +306,7 @@ function App() {
                         min="0"
                         value={h.passiveHrs || ""}
                         onChange={(e) =>
-                          handleInput(d, "passiveHrs", e.target.value)
+                          handleInput(day, "passiveHrs", e.target.value)
                         }
                       />
                     </label>
