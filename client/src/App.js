@@ -4,7 +4,6 @@ import "./App.css";
 
 const API_URL = "http://localhost:5000/api/hours";
 
-// ---------- DATE HELPERS ----------
 // Format Date object as YYYY-MM-DD string
 const formatDate = (date) => {
   const d = new Date(date);
@@ -60,17 +59,17 @@ function App() {
       .catch((err) => console.error(err));
   }, []);
 
-  // ---------- Weekly ----------
+  // Weekly
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()));
   const weekDays = [...Array(7)].map((_, i) => addDays(weekStart, i));
 
-  // ---------- Monthly ----------
+  //Monthly
   const [monthStart, setMonthStart] = useState(startOfMonth(new Date()));
   const monthDays = [...Array(daysInMonth(monthStart))].map(
     (_, i) => new Date(monthStart.getFullYear(), monthStart.getMonth(), i + 1)
   );
 
-  // ---------- Input handler ----------
+  //Input handler
   const handleInput = async (day, field, value) => {
     const key = formatDate(day);
     const num = Number(value);
@@ -107,7 +106,7 @@ function App() {
     }
   };
 
-  // ---------- Totals ----------
+  // Totals
   const sum = (days, field) =>
     days.reduce((acc, day) => acc + (hours[formatDate(day)]?.[field] || 0), 0);
 
@@ -141,7 +140,6 @@ function App() {
   const yearlyPassive = yearlyTotals.reduce((acc, m) => acc + m.passive, 0);
   const yearlyTotal = yearlyActive + yearlyPassive;
 
-  // ---------- UI ----------
   return (
     <div className="App">
       <h1>Hours Tracker</h1>
