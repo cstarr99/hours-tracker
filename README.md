@@ -24,7 +24,12 @@
 
 ### Easy Editing: Quickly update or delete entries.
 
+## Weekly Tracker
+
 ![alt text](images/weekly.png)
+
+## Monthly Tracker
+
 ![alt text](images/monthly1.png)
 ![alt text](images/monthly2.png)
 ![alt text](images/monthly3.png)
