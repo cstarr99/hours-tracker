@@ -3,8 +3,9 @@ import axios from "axios";
 import "./App.css";
 
 const API_URL = "http://localhost:5000/api/hours";
+const YEARLY_GOAL = 3000;
 
-// Format Date object as YYYY-MM-DD string
+// Format date as YYYY-MM-DD
 const formatDate = (date) => {
   const d = new Date(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
@@ -36,18 +37,16 @@ const daysInMonth = (date) =>
 
 function App() {
   const [view, setView] = useState("week");
+  const [hours, setHours] = useState({}); // key = YYYY-MM-DD
 
-  // Store hours from backend, key = YYYY-MM-DD
-  const [hours, setHours] = useState({});
-
-  // Fetch hours from backend
+  // Fetch hour logs from backend
   useEffect(() => {
     axios
       .get(API_URL)
       .then((res) => {
         const map = {};
         res.data.data.allHours.forEach((log) => {
-          const key = log.date.slice(0, 10); // treat as string YYYY-MM-DD
+          const key = log.date.slice(0, 10); // YYYY-MM-DD
           map[key] = {
             id: log._id,
             activeHrs: log.activeHrs,
@@ -63,20 +62,19 @@ function App() {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()));
   const weekDays = [...Array(7)].map((_, i) => addDays(weekStart, i));
 
-  //Monthly
+  // Monthly
   const [monthStart, setMonthStart] = useState(startOfMonth(new Date()));
   const monthDays = [...Array(daysInMonth(monthStart))].map(
     (_, i) => new Date(monthStart.getFullYear(), monthStart.getMonth(), i + 1)
   );
 
-  //Input handler
+  // Handle input changes
   const handleInput = async (day, field, value) => {
     const key = formatDate(day);
     const num = Number(value);
     const existing = hours[key];
 
     if (!existing) {
-      // create new
       try {
         const res = await axios.post(API_URL, {
           date: key,
@@ -95,7 +93,6 @@ function App() {
         console.error(err);
       }
     } else {
-      // update existing
       try {
         const updated = { ...existing, [field]: num };
         await axios.patch(`${API_URL}/${existing.id}`, updated);
@@ -106,7 +103,7 @@ function App() {
     }
   };
 
-  // Totals
+  // Helper to sum hours
   const sum = (days, field) =>
     days.reduce((acc, day) => acc + (hours[formatDate(day)]?.[field] || 0), 0);
 
@@ -139,11 +136,17 @@ function App() {
   const yearlyActive = yearlyTotals.reduce((acc, m) => acc + m.active, 0);
   const yearlyPassive = yearlyTotals.reduce((acc, m) => acc + m.passive, 0);
   const yearlyTotal = yearlyActive + yearlyPassive;
+  const yearlyPercent = Math.min(
+    ((yearlyTotal / YEARLY_GOAL) * 100).toFixed(1),
+    100
+  );
+  const yearlyRemaining = Math.max(YEARLY_GOAL - yearlyTotal, 0);
 
   return (
     <div className="App">
       <h1>Hours Tracker</h1>
 
+      {/* Toggle view */}
       <div className="toggle-buttons">
         <button
           className={view === "week" ? "active" : ""}
@@ -159,15 +162,16 @@ function App() {
         </button>
       </div>
 
-      {/* Weekly */}
+      {/* ---------- Weekly ---------- */}
       {view === "week" && (
-        <div className="weekly-view">
+        <div className="calendar">
           <h2>Weekly Calendar</h2>
           <div className="weekly-totals">
-            <p>Total: {weeklyTotal}</p>
+            <p>Total Hours: {weeklyTotal}</p>
             <p>Active: {weeklyActive}</p>
             <p>Passive: {weeklyPassive}</p>
           </div>
+
           <div className="week-controls">
             <button onClick={() => setWeekStart(addDays(weekStart, -7))}>
               Previous Week
@@ -179,6 +183,7 @@ function App() {
               Next Week
             </button>
           </div>
+
           <ul className="week-days">
             {weekDays.map((day) => {
               const key = formatDate(day);
@@ -220,15 +225,16 @@ function App() {
         </div>
       )}
 
-      {/* Monthly */}
+      {/* ---------- Monthly ---------- */}
       {view === "month" && (
-        <div className="monthly-view">
+        <div className="calendar">
           <h2>Monthly Calendar</h2>
           <div className="monthly-totals">
-            <p>Total: {monthlyTotal}</p>
+            <p>Total Hours: {monthlyTotal}</p>
             <p>Active: {monthlyActive}</p>
             <p>Passive: {monthlyPassive}</p>
           </div>
+
           <div className="month-controls">
             <button onClick={() => setMonthStart(addMonths(monthStart, -1))}>
               Previous Month
@@ -244,11 +250,28 @@ function App() {
             </button>
           </div>
 
-          <div className="yearly-total">
-            <h3>Year {year} Totals</h3>
-            <p>Total: {yearlyTotal}</p>
-            <p>Active: {yearlyActive}</p>
-            <p>Passive: {yearlyPassive}</p>
+          {/* Yearly goal */}
+          <div className="goal-container">
+            <div className="goal-title">Year Goal Progress</div>
+            <div className="goal-bar">
+              <div
+                className="goal-progress"
+                style={{ width: `${yearlyPercent}%` }}
+              ></div>
+            </div>
+            <div className="goal-stats">
+              {yearlyTotal} / {YEARLY_GOAL} hrs ({yearlyPercent}%)
+              <br />
+              {yearlyRemaining} hrs remaining
+            </div>
+
+            {/* Yearly totals summary */}
+            <div className="yearly-totals-summary">
+              <h3>Yearly Totals</h3>
+              <p>Total Hours: {yearlyTotal}</p>
+              <p>Active Hours: {yearlyActive}</p>
+              <p>Passive Hours: {yearlyPassive}</p>
+            </div>
           </div>
 
           <div className="yearly-summary">
